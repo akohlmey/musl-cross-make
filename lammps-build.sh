@@ -15,6 +15,7 @@ openssl_ver=3.5.0
 curl_ver=8.14.1
 
 # setup toolkit for in place compilation and installation
+mkdir -p musl/share/cmake
 sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" files/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
 
 # download additional source packages, if needed.
@@ -28,15 +29,20 @@ then \
     curl --location --output sources/libpng-${png_ver}.tar.gz https://download.sourceforge.net/libpng/libpng-${png_ver}.tar.gz
 fi
 
+if [ ! -e sources/libjpeg-turbo-${jpeg_ver}.tar.gz ]
+then \
+    curl --location --output sources/libjpeg-turbo-${jpeg_ver}.tar.gz \
+       https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${jpeg_ver}/libjpeg-turbo-${jpeg_ver}.tar.gz
+fi
+
 if [ ! -e sources/termcap-${termcap_ver}.tar.gz ]
 then \
     curl --location --output sources/termcap-${termcap_ver}.tar.gz https://ftp.gnu.org/gnu/termcap/termcap-${termcap_ver}.tar.gz
 fi
 
-if [ ! -e sources/libjpeg-turbo-${jpeg_ver}.tar.gz ]
+if [ ! -e sources/readline-${readline_ver}.tar.gz ]
 then \
-    curl --location --output sources/libjpeg-turbo-${jpeg_ver}.tar.gz \
-       https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${jpeg_ver}/libjpeg-turbo-${jpeg_ver}.tar.gz
+    curl --location --output sources/readline-${readline_ver}.tar.gz https://ftp.gnu.org/gnu/readline/readline-${readline_ver}.tar.gz
 fi
 
 if [ ! -e sources/openssl-${openssl_ver}.tar.gz ]
