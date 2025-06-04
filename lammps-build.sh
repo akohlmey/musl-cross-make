@@ -206,6 +206,16 @@ for s in musl/share/pkgconfig/*.pc
 do \
         sed -i "s%${PWD}%/usr%g" $s
 done
+
+# remove undesired library files
+
+rm -f musl/x86_64-linux-musl/lib/ld-musl-x86_64.so.1
+rm -f musl/x86_64-linux-musl/lib/libc.so
+for f in atomic gfortran gomp itm quadmath ssp stdc++
+do \
+    rm -f lib${f}.so lib${f}.so.* lib${f}.la
+done
+
 # clean up and create archive
 touch musl/dummy~
 rm -rf musl/share/info musl/share/doc musl/share/man musl/share/readline musl/info
