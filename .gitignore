@@ -43,6 +43,7 @@ vgcore.*
 /libjpeg-*/
 /openssl-*/
 /curl-*/
+/zstd-*/
 /build/
 /musl/bin
 /musl/include

@@ -50,7 +50,7 @@ clean:
 	rm -rf gcc-* binutils-* musl-* gmp-* mpc-* mpfr-* isl-* build build-* linux-* zlib-* libpng-* libjpeg-* curl-* termcap-* readline-* openssl-*
 
 distclean: clean
-	rm -rf sources
+	rm -rf sources musl
 
 
 # Rules for downloading and verifying sources. Treat an external SOURCES path as

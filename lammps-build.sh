@@ -13,6 +13,7 @@ readline_ver=8.2.13
 jpeg_ver=3.1.0
 openssl_ver=3.5.0
 curl_ver=8.14.1
+zstd_ver=1.5.7
 
 # setup toolkit for in place compilation and installation
 mkdir -p musl/share/cmake
@@ -22,6 +23,11 @@ sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" files/linux-musl.
 if [ ! -e sources/zlib-${zlib_ver}.tar.gz ]
 then \
     curl --location --output sources/zlib-${zlib_ver}.tar.gz https://zlib.net/zlib-${zlib_ver}.tar.gz
+fi
+
+if [ ! -e sources/zstd-${zstd_ver}.tar.gz ]
+then \
+    curl --location --output sources/zstd-${zstd_ver}.tar.gz https://github.com/facebook/zstd/releases/download/v${zstd_ver}/zstd-${zstd_ver}.tar.gz
 fi
 
 if [ ! -e sources/libpng-${png_ver}.tar.gz ]
@@ -64,6 +70,7 @@ sha256sum -c - <<EOF
 9564c72b1dfd1d6fe6274c5f95a8d989b59854575d4bbee44ade7bc17aa9bc93  sources/libjpeg-turbo-3.1.0.tar.gz
 344d0a79f1a9b08029b0744e2cc401a43f9c90acd1044d09a530b4885a8e9fc0  sources/openssl-3.5.0.tar.gz
 6766ada7101d292b42b8b15681120acd68effa4a9660935853cf6d61f0d984d4  sources/curl-8.14.1.tar.gz
+eb33e51f49a15e023950cd7825ca74a4a2b43db8354825ac24fc1b7ee09e6fa3  sources/zstd-1.5.7.tar.gz
 EOF
 if [ $? -ne 0 ]
 then \
@@ -78,6 +85,15 @@ then \
     if [ -e patches/zlib-${zlib_ver}.patch ]
     then \
         patch -p 0 -b < patches/zlib-${zlib_ver}.patch
+    fi
+fi
+
+if [ ! -e zstd-${zstd_ver} ]
+then \
+    tar -xzvvf sources/zstd-${zstd_ver}.tar.gz
+    if [ -e patches/zstd-${zstd_ver}.patch ]
+    then \
+        patch -p 0 -b < patches/zstd-${zstd_ver}.patch
     fi
 fi
 
@@ -143,6 +159,15 @@ cmake --build build/zlib-${zlib_ver} || exit 2
 cmake --install build/zlib-${zlib_ver} || exit 2
 ln -sf libzlib.a musl/lib/libz.a
 
+# compile and install zstd
+rm -rvf build/zstd-*
+cmake -B build/zstd-${zstd_ver} -S zstd-${zstd_ver}/build/cmake -D CMAKE_INSTALL_PREFIX=${prefix_dir} \
+      -D CMAKE_BUILD_TYPE=MinSizeRel -D ZSTD_BUILD_CONTRIB=off -D ZSTD_BUILD_PROGRAMS=off \
+      -D ZSTD_MULTITHREAD_SUPPORT_DEFAULT=off -D ZSTD_BUILD_STATIC=on -D ZSTD_BUILD_SHARED=off \
+      --toolchain ${prefix_dir}/share/cmake/linux-musl.cmake -G Ninja
+cmake --build build/zstd-${zstd_ver} || exit 2
+cmake --install build/zstd-${zstd_ver} || exit 2
+
 # compile and install libpng16
 rm -rvf build/libpng-*
 cmake -B build/libpng-${png_ver} -S libpng-${png_ver} -D CMAKE_INSTALL_PREFIX=${prefix_dir} -D CMAKE_BUILD_TYPE=MinSizeRel \
@@ -207,7 +232,7 @@ do \
         sed -i "s%${PWD}%/usr%g" $s
 done
 
-# remove undesired library files
+# remove undesired (shared) library files
 
 rm -f musl/x86_64-linux-musl/lib/ld-musl-x86_64.so.1
 rm -f musl/x86_64-linux-musl/lib/libc.so
