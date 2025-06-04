@@ -1,7 +1,7 @@
 #!/bin/sh
 
-#make -j8
-#make install
+make -j8
+make install
 export PATH=${PWD}/musl/bin:${PATH}
 prefix_dir=${PWD}/musl
 
@@ -11,6 +11,8 @@ png_ver=1.6.48
 termcap_ver=1.3.1
 readline_ver=8.2.13
 jpeg_ver=3.1.0
+openssl_ver=3.5.0
+curl_ver=8.14.1
 
 # setup toolkit for in place compilation and installation
 sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
@@ -37,6 +39,16 @@ then \
        https://github.com/libjpeg-turbo/libjpeg-turbo/releases/download/${jpeg_ver}/libjpeg-turbo-${jpeg_ver}.tar.gz
 fi
 
+if [ ! -e sources/openssl-${openssl_ver}.tar.gz ]
+then \
+    curl --location --output sources/openssl-${openssl_ver}.tar.gz https://github.com/openssl/openssl/releases/download/openssl-${openssl_ver}/openssl-${openssl_ver}.tar.gz
+fi
+
+if [ ! -e sources/curl-${curl_ver}.tar.gz ]
+then \
+    curl --location --output sources/curl-${curl_ver}.tar.gz https://curl.se/download/curl-${curl_ver}.tar.gz
+fi
+
 # check hashes
 sha256sum -c - <<EOF
 9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23  sources/zlib-1.3.1.tar.gz
@@ -44,6 +56,8 @@ sha256sum -c - <<EOF
 91a0e22e5387ca4467b5bcb18edf1c51b930262fd466d5fda396dd9d26719100  sources/termcap-1.3.1.tar.gz
 0e5be4d2937e8bd9b7cd60d46721ce79f88a33415dd68c2d738fb5924638f656  sources/readline-8.2.13.tar.gz
 9564c72b1dfd1d6fe6274c5f95a8d989b59854575d4bbee44ade7bc17aa9bc93  sources/libjpeg-turbo-3.1.0.tar.gz
+344d0a79f1a9b08029b0744e2cc401a43f9c90acd1044d09a530b4885a8e9fc0  sources/openssl-3.5.0.tar.gz
+6766ada7101d292b42b8b15681120acd68effa4a9660935853cf6d61f0d984d4  sources/curl-8.14.1.tar.gz
 EOF
 if [ $? -ne 0 ]
 then \
@@ -97,18 +111,36 @@ then \
     fi
 fi
 
+if [ ! -e openssl-${openssl_ver} ]
+then \
+    tar -xzvvf sources/openssl-${openssl_ver}.tar.gz
+    if [ -e patches/openssl-${openssl_ver}.patch ]
+    then \
+        patch -p 0 -b < patches/openssl-${openssl_ver}.patch
+    fi
+fi
+
+if [ ! -e curl-${curl_ver} ]
+then \
+    tar -xzvvf sources/curl-${curl_ver}.tar.gz
+    if [ -e patches/curl-${curl_ver}.patch ]
+    then \
+        patch -p 0 -b < patches/curl-${curl_ver}.patch
+    fi
+fi
+
 # compile and install zlib
 rm -rvf build/zlib-*
-cmake -B build/zlib-${zlib_ver} -S zlib-${zlib_ver} -D CMAKE_INSTALL_PREFIX=$PWD/musl -D CMAKE_BUILD_TYPE=MinSizeRel \
-        -D ZLIB_BUILD_EXAMPLES=off --toolchain $PWD/musl/share/cmake/linux-musl.cmake -G Ninja
+cmake -B build/zlib-${zlib_ver} -S zlib-${zlib_ver} -D CMAKE_INSTALL_PREFIX=${prefix_dir} -D CMAKE_BUILD_TYPE=MinSizeRel \
+        -D ZLIB_BUILD_EXAMPLES=off --toolchain ${prefix_dir}/share/cmake/linux-musl.cmake -G Ninja
 cmake --build build/zlib-${zlib_ver} || exit 2
 cmake --install build/zlib-${zlib_ver} || exit 2
 ln -sf libzlib.a musl/lib/libz.a
 
 # compile and install libpng16
 rm -rvf build/libpng-*
-cmake -B build/libpng-${png_ver} -S libpng-${png_ver} -D CMAKE_INSTALL_PREFIX=$PWD/musl -D CMAKE_BUILD_TYPE=MinSizeRel \
-        -D PNG_SHARED=off --toolchain $PWD/musl/share/cmake/linux-musl.cmake -G Ninja
+cmake -B build/libpng-${png_ver} -S libpng-${png_ver} -D CMAKE_INSTALL_PREFIX=${prefix_dir} -D CMAKE_BUILD_TYPE=MinSizeRel \
+        -D PNG_SHARED=off --toolchain ${prefix_dir}/share/cmake/linux-musl.cmake -G Ninja
 cmake --build build/libpng-${png_ver} || exit 3
 cmake --install build/libpng-${png_ver} || exit 3
 [ -f musl/lib/liblibpng16_static.a ] && mv musl/lib/liblibpng16_static.a musl/lib/libpng16.a
@@ -131,14 +163,35 @@ CC=x86_64-linux-musl-gcc LD=x86_64-linux-musl-ld CFLAGS="-g0 -Os -Wall -DNDEBUG"
 make
 make install oldincludedir=
 popd
-#sed -e "s%@PREFIX@%${PWD}/musl%" musl/lib/pkgconfig/termcap.pc.in > musl/lib/pkgconfig/termcap.pc
 
 # compile and install jpeg-turbo
 rm -rvf build/libjpeg-turbo-*
-cmake -B build/libjpeg-turbo-${jpeg_ver} -S libjpeg-turbo-${jpeg_ver} -D CMAKE_INSTALL_PREFIX=$PWD/musl -D CMAKE_BUILD_TYPE=MinSizeRel \
-        -D ENABLE_SHARED=off --toolchain $PWD/musl/share/cmake/linux-musl.cmake -G Ninja
+cmake -B build/libjpeg-turbo-${jpeg_ver} -S libjpeg-turbo-${jpeg_ver} -D CMAKE_INSTALL_PREFIX=${prefix_dir} -D CMAKE_BUILD_TYPE=MinSizeRel \
+        -D ENABLE_SHARED=off --toolchain ${prefix_dir}/share/cmake/linux-musl.cmake -G Ninja
 cmake --build build/libjpeg-turbo-${jpeg_ver} || exit 3
 cmake --install build/libjpeg-turbo-${jpeg_ver} || exit 3
+
+# compile and install OpenSSL
+rm -rvf build/openssl-*
+mkdir -p build/openssl-${openssl_ver}
+pushd  build/openssl-${openssl_ver}
+CC=x86_64-linux-musl-gcc CXX=x86_64-linux-musl-g++ LD=x86_64-linux-musl-ld \
+    CFLAGS="-g0 -Os -Wall -DNDEBUG" CXXFLAGS="-g0 -Os -Wall -DNDEBUG"  \
+    perl ../../openssl-${openssl_ver}/Configure --prefix=${prefix_dir} no-shared -static --libdir=lib
+make -j8
+make install -j8
+popd
+
+# compile and install libcurl
+rm -rvf build/curl-*
+cmake -B build/curl-${curl_ver} -S curl-${curl_ver} -D CMAKE_INSTALL_PREFIX=${prefix_dir} \
+      -D BUILD_CURL_EXE=off -D BUILD_SHARED_LIBS=off -D BUILD_STATIC_LIBS=on \
+      -D USE_OPENSSL=on -D OPENSSL_ROOT_DIR=${prefix_dir} -D OPENSSL_USE_STATIC_LIBS=on \
+      -D CURL_DISABLE_LDAP=on -D USE_LIBIDN2=off -D CURL_USE_LIBPSL=off \
+      -D CURL_USE_LIBSSH2=off -D CURL_USE_LIBSSH=off \
+      -D CMAKE_BUILD_TYPE=MinSizeRel --toolchain ${prefix_dir}/share/cmake/linux-musl.cmake -G Ninja
+cmake --build build/curl-${curl_ver} || exit 4
+cmake --install build/curl-${curl_ver} || exit 4
 
 # setup toolkit for use in containers at the /usr/musl toplevel directory
 sed -e "s%@ROOT_DIR@%/usr%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
@@ -149,6 +202,8 @@ do \
 done
 # clean up and create archive
 touch musl/dummy~
-rm -rvf musl/share/info musl/share/doc musl/share/man musl/share/readline musl/info
-find musl -type f -name \*~ -print0 | xargs -0 rm -v
-#tar -czvvf musl-gcc-f41.tar.gz musl
+rm -rf musl/share/info musl/share/doc musl/share/man musl/share/readline musl/info
+rm -f musl/lib/readline.old
+rm -f musl/lib/history.old
+find musl -type f -name \*~ -print0 | xargs -0 rm
+tar -czvvf musl-gcc-f41.tar.gz musl

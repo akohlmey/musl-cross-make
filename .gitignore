@@ -41,6 +41,8 @@ vgcore.*
 /termcap-*/
 /readline-*/
 /libjpeg-*/
+/openssl-*/
+/curl-*/
 /build/
 /musl/bin
 /musl/include
@@ -52,3 +54,4 @@ vgcore.*
 /musl/share/gcc-*/
 /musl/share/pkgconfig
 /musl-gcc-*.tar.gz
+/musl/ssl
