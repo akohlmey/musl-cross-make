@@ -36,7 +36,7 @@ then \
     tar -xzvvf sources/zlib-${zlib_ver}.tar.gz
     if [ -e patches/zlib-${zlib_ver}.patch ]
     then \
-        patch -p 0 -b .orig < patches/zlib-${zlib_ver}.patch
+        patch -p 0 -b < patches/zlib-${zlib_ver}.patch
     fi
 fi
 
@@ -45,7 +45,7 @@ then \
     tar -xzvvf sources/libpng-${png_ver}.tar.gz
     if [ -e patches/libpng-${png_ver}.patch ]
     then \
-        patch -p 0 -b .orig < patches/libpng-${png_ver}.patch
+        patch -p 0 -b < patches/libpng-${png_ver}.patch
     fi
 fi
 
