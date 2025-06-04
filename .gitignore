@@ -21,6 +21,8 @@ vgcore.*
 \#*#
 .#*
 .vscode
+*~
+.*~
 
 /config.mak
 /sources/
