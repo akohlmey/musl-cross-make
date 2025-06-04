@@ -15,7 +15,7 @@ openssl_ver=3.5.0
 curl_ver=8.14.1
 
 # setup toolkit for in place compilation and installation
-sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
+sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" files/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
 
 # download additional source packages, if needed.
 if [ ! -e sources/zlib-${zlib_ver}.tar.gz ]
@@ -154,7 +154,7 @@ CC=x86_64-linux-musl-gcc LD=x86_64-linux-musl-ld CFLAGS="-g0 -Os -Wall -DNDEBUG"
 make
 make install oldincludedir=
 popd
-sed -e "s%@PREFIX@%${PWD}/musl%" musl/lib/pkgconfig/termcap.pc.in > musl/lib/pkgconfig/termcap.pc
+sed -e "s%@PREFIX@%${PWD}/musl%" files/termcap.pc.in > musl/lib/pkgconfig/termcap.pc
 
 # compile and install readline
 mkdir -p build/readline-${readline_ver}
