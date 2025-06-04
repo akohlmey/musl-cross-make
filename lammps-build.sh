@@ -225,7 +225,7 @@ cmake --build build/curl-${curl_ver} || exit 4
 cmake --install build/curl-${curl_ver} || exit 4
 
 # setup toolkit for use in containers at the /usr/musl toplevel directory
-sed -e "s%@ROOT_DIR@%/usr%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
+sed -e "s%@ROOT_DIR@%/usr%" -e "s%@GCC_VERSION@%${gcc_ver}%" files/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
 # fix up pkgconfig files
 for s in musl/share/pkgconfig/*.pc
 do \
