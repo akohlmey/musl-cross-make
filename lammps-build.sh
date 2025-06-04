@@ -7,6 +7,7 @@ export PATH=${PWD}/musl/bin:${PATH}
 gcc_ver=$(awk '/GCC_VER/ {print $3}' config.mak)
 zlib_ver=1.3.1
 png_ver=1.6.48
+termcap_ver=1.3.1
 
 # setup toolkit for in place compilation and installation
 sed -e "s%@ROOT_DIR@%${PWD}%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
@@ -18,11 +19,17 @@ then \
 fi
 if [ ! -e sources/libpng-${png_ver}.tar.gz ]
 then \
-    curl --location --output sources/libpng-${png_ver}.tar.gz https://download.sourceforge.net/libpng/libpng-1.6.48.tar.gz
+    curl --location --output sources/libpng-${png_ver}.tar.gz https://download.sourceforge.net/libpng/libpng-${png_ver}.tar.gz
 fi
+if [ ! -e sources/termcap-${termcap_ver}.tar.gz ]
+then \
+    curl --location --output sources/termcap-${termcap_ver}.tar.gz https://ftp.gnu.org/gnu/termcap/termcap-${termcap_ver}.tar.gz
+fi
+# check hashes
 sha256sum -c - <<EOF
 9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23  sources/zlib-1.3.1.tar.gz
 68f3d83a79d81dfcb0a439d62b411aa257bb4973d7c67cd1ff8bdf8d011538cd  sources/libpng-1.6.48.tar.gz
+91a0e22e5387ca4467b5bcb18edf1c51b930262fd466d5fda396dd9d26719100  sources/termcap-1.3.1.tar.gz
 EOF
 if [ $? -ne 0 ]
 then \
@@ -48,6 +55,14 @@ then \
         patch -p 0 -b < patches/libpng-${png_ver}.patch
     fi
 fi
+if [ ! -e termcap-${termcap_ver} ]
+then \
+    tar -xzvvf sources/termcap-${termcap_ver}.tar.gz
+    if [ -e patches/termcap-${termcap_ver}.patch ]
+    then \
+        patch -p 0 -b < patches/termcap-${termcap_ver}.patch
+    fi
+fi
 
 # compile and install zlib
 rm -rvf build/zlib-*
@@ -65,6 +80,15 @@ cmake --build build/libpng-${png_ver} || exit 3
 cmake --install build/libpng-${png_ver} || exit 3
 [ -f musl/lib/liblibpng16_static.a ] && mv musl/lib/liblibpng16_static.a musl/lib/libpng16.a
 ln -sf libpng16.a musl/lib/libpng.a
+
+# compile and install termcap
+mkdir -p build/termcap-${termcap_ver}
+pushd build/termcap-${termcap_ver}
+CC=x86_64-linux-musl-gcc LD=x86_64-linux-musl-ld CFLAGS="-g0 -Os -Wall -DNDEBUG" LDFLAGS=-static ../../termcap-${termcap_ver}/configure --prefix=${PWD}/../../musl
+make
+make install oldincludedir=
+popd
+sed -e "s%@PREFIX@%${PWD}/musl%" musl/lib/pkgconfig/termcap.pc.in > musl/lib/pkgconfig/termcap.pc
 
 # setup toolkit for use in containers at the /usr/musl toplevel directory
 sed -e "s%@ROOT_DIR@%/usr%" -e "s%@GCC_VERSION@%${gcc_ver}%" musl/share/cmake/linux-musl.cmake.in > musl/share/cmake/linux-musl.cmake
