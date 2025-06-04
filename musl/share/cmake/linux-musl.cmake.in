@@ -1,0 +1,34 @@
+SET(CMAKE_SYSTEM_NAME LinuxMUSL)
+SET(CMAKE_SYSTEM_PROCESSOR x86_64)
+
+SET(_ARCH x86_64-linux-musl)
+SET(_GCC @GCC_VERSION@)
+SET(_MUSL_ROOT @ROOT_DIR@/musl)
+
+# specify the cross compiler
+SET(CMAKE_C_COMPILER ${_MUSL_ROOT}/bin/${_ARCH}-gcc)
+SET(CMAKE_CXX_COMPILER ${_MUSL_ROOT}/bin/${_ARCH}-g++)
+SET(CMAKE_Fortran_COMPILER ${_MUSL_ROOT}/bin/${_ARCH}-gfortran)
+
+# where is the target environment
+SET(CMAKE_FIND_ROOT_PATH ${_MUSL_ROOT})
+SET(CMAKE_PREFIX_PATH  ${_MUSL_ROOT};${_MUSL_ROOT}/${_ARCH})
+
+# search for programs in the build host directories
+SET(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+# for libraries, headers and packages in the target directories
+SET(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+SET(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+
+# need to create fully static binaries to run on host
+SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+SET(CMAKE_EXE_LINKER_FLAGS "-static")
+SET(OpenMP_C_INCLUDE_DIR ${_MUSL_ROOT}/lib/gcc/${_ARCH}/${_GCC}/include/ CACHE PATH "Directory with C compiler version specific includes" FORCE)
+SET(OpenMP_CXX_INCLUDE_DIR ${_MUSL_ROOT}/lib/gcc/${_ARCH}/${_GCC}/include/ CACHE PATH "Directory with C++ compiler version specific includes" FORCE)
+SET(OpenMP_gomp_LIBRARY ${_MUSL_ROOT}/${_ARCH}/lib/libgomp.a CACHE FILEPATH "Path to libgomp" FORCE)
+SET(CMAKE_Fortran_IMPLICIT_LINK_LIBRARIES gfortran;m;gcc;quadmath;m;gcc;c;gcc)
+SET(ZLIB_ROOT ${_MUSL_ROOT})
+
+UNSET(_ARCH)
+UNSET(_GCC)
