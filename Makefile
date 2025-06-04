@@ -47,7 +47,7 @@ SRC_DIRS = gcc-$(GCC_VER) binutils-$(BINUTILS_VER) musl-$(MUSL_VER) \
 all:
 
 clean:
-	rm -rf gcc-* binutils-* musl-* gmp-* mpc-* mpfr-* isl-* build build-* linux-* zlib-* libpng-*
+	rm -rf gcc-* binutils-* musl-* gmp-* mpc-* mpfr-* isl-* build build-* linux-* zlib-* libpng-* libjpeg-* curl-* termcap-* readline-* openssl-*
 
 distclean: clean
 	rm -rf sources
